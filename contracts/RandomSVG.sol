@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "base64-sol/base64.sol";
 
 contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
 
@@ -68,6 +69,30 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
     emit CreatedRandomSVG(_tokenId, tokenURI);
   }
 
+  function svgToImageURI(string memory _svg) public pure returns (string memory) {
+    // <svg xmlns="http://www.w3.org/2000/svg" height="210" width="400"><path d="M150 0 L75 200 L225 200 Z" /></svg>
+    // data:image/svg+xml;base64,<Base64-encoding>
+    string memory baseURL = "data:image/svg+xml;base64,";
+    string memory svgBase64Encoded = Base64.encode(bytes(string(abi.encodePacked(_svg))));
+    string memory imageURI = string(abi.encodePacked(baseURL, svgBase64Encoded));
+    return imageURI;
+  }
+
+  function formatTokenURI(string memory _imageURI) public pure returns (string memory) {
+    string memory baseURL = "data:application/json;base64,";
+    return string(abi.encodePacked(
+      baseURL,
+      Base64.encode(
+        bytes(abi.encodePacked(
+          '{"name": "SVG NFT", ',
+          '"description": "An NFT based on SVG!", ',
+          '"attributes": "", ',
+          '"image": "', _imageURI, '"}'
+        )
+      ))
+    ));
+  }
+
   /*
   <svg xmlns="blablabla" height="210" width="400">
     <path d="M150 0 L75 200 L225 200 L100 100 L25 24" />
@@ -77,7 +102,7 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
   */
   function generateSVG(uint256 _randomNumber) public view returns (string memory finalSvg) {
     uint256 numberOfPath = (_randomNumber % maxNumberOfPaths) + 1;
-    finalSvg = string("<svg xmlns='http://www.w3.org/2000/svg' height='", uint2str(size), "' width='", uint2str(size) ,"'>");
+    finalSvg = string(abi.encodePacked("<svg xmlns='http://www.w3.org/2000/svg' height='", uint2str(size), "' width='", uint2str(size) ,"'>"));
     for(uint i = 0; i < numberOfPath; i++) {
       uint newRNG = uint256(keccak256(abi.encode(_randomNumber, i)));
       string memory pathSvg = generatePath(newRNG);
