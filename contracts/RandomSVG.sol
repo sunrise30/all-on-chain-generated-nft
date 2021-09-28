@@ -68,6 +68,13 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
     emit CreatedRandomSVG(_tokenId, tokenURI);
   }
 
+  /*
+  <svg xmlns="blablabla" height="210" width="400">
+    <path d="M150 0 L75 200 L225 200 L100 100 L25 24" />
+    <path d="M1 0 L25 400 L100 100" fill="transparent" stroke="blue" />
+    <path d="M1 0 L0 500 L100 100" fill="transparent" stroke="red" />
+  </svg>
+  */
   function generateSVG(uint256 _randomNumber) public view returns (string memory finalSvg) {
     uint256 numberOfPath = (_randomNumber % maxNumberOfPaths) + 1;
     finalSvg = string("<svg xmlns='http://www.w3.org/2000/svg' height='", uint2str(size), "' width='", uint2str(size) ,"'>");
@@ -77,6 +84,25 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
       finalSvg = string(abi.encodePacked(finalSvg, pathSvg));
     }
     finalSvg = string(abi.encodePacked(finalSvg, "</svg>"));
+  }
+
+  function generatePath(uint256 _randomNumber) public view returns (string memory pathSvg) {
+     uint256 numberOfPathCommands = (_randomNumber % maxNumberOfPathCommands) + 1;
+     pathSvg = "<path d='";
+     for (uint i = 0; i < numberOfPathCommands; i++) {
+       uint256 newRNG = uint256(keccak256(abi.encode(_randomNumber, size + i)));
+       string memory pathCommand = generatePathCommand(newRNG);
+       pathSvg = string(abi.encodePacked(pathSvg, pathCommand));
+     }
+     string memory color = colors[_randomNumber % colors.length];
+     pathSvg = string(abi.encodePacked(pathSvg, "' fill='transparent' stroke='", color, "'>"));
+  }
+
+  function generatePathCommand(uint256 _randomNumber) public view returns (string memory pathCommand) {
+    pathCommand = pathCommands[_randomNumber % pathCommands.length];
+    uint256 parameterOne = uint256(keccak256(abi.encode(_randomNumber, size * 2))) % size;
+    uint256 parameterTwo = uint256(keccak256(abi.encode(_randomNumber, size * 2))) % size;
+    pathCommand = string(abi.encodePacked(pathCommand, " ", uint2str(parameterOne), " ", uint2str(parameterTwo)));
   }
 
   function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
