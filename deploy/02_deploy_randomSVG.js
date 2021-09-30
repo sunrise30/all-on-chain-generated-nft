@@ -44,7 +44,7 @@ module.exports = async ({
   // create an NFT! By calling a random number
   const RandomSVGContract = await ethers.getContractFactory("RandomSVG");
   const randomSVG = new ethers.Contract(RandomSVG.address, RandomSVGContract.interface, signer);
-  let creation_tx = await randomSVG.create({ gasLimit: 300000 });
+  let creation_tx = await randomSVG.create({ gasLimit: 300000, value: '100000000000000000' });
   let receipt = await creation_tx.wait(1);
   let tokenId = receipt.events[3].topics[2];
   log(`You've made your NFT! This is token number ${tokenId.toString()}`);

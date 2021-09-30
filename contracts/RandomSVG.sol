@@ -2,10 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "base64-sol/base64.sol";
 
-contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
+contract RandomSVG is ERC721URIStorage, VRFConsumerBase, Ownable {
 
   bytes32 public keyHash;
   uint256 public fee;
@@ -15,6 +16,7 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
   uint256 public maxNumberOfPaths;
   uint256 public maxNumberOfPathCommands;
   uint256 public size;
+  uint256 public price;
   string[] public colors;
 
   mapping(bytes32 => address) public requestIdToSender;
@@ -31,6 +33,7 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
     fee = _fee;
     keyHash = _keyHash;
     tokenCounter = 0;
+    price = 100000000000000000; // 0.1 ETH
   
     maxNumberOfPaths = 10;
     maxNumberOfPathCommands = 5;
@@ -38,13 +41,18 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
     colors = ["red", "blue", "green", "yellow", "black", "white"];
   }
 
-  function create() public returns (bytes32 requestId) {
+  function create() public payable returns (bytes32 requestId) {
+    require(msg.value >= price, "Need to send more ETH");
     requestId = requestRandomness(keyHash, fee);
     requestIdToSender[requestId] = msg.sender;
     uint256 tokenId = tokenCounter;
     requestIdToTokenId[requestId] = tokenId;
     tokenCounter = tokenCounter + 1;
     emit requestedRandomSVG(requestId, tokenId);
+  }
+
+  function withdraw() public payable onlyOwner {
+    payable(owner()).transfer(address(this).balance);
   }
 
   function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
