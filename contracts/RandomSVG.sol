@@ -15,7 +15,6 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
   uint256 public maxNumberOfPaths;
   uint256 public maxNumberOfPathCommands;
   uint256 public size;
-  string[] public pathCommands;
   string[] public colors;
 
   mapping(bytes32 => address) public requestIdToSender;
@@ -36,7 +35,6 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
     maxNumberOfPaths = 10;
     maxNumberOfPathCommands = 5;
     size = 500;
-    pathCommands = ["M", "L"];
     colors = ["red", "blue", "green", "yellow", "black", "white"];
   }
 
@@ -116,18 +114,18 @@ contract RandomSVG is ERC721URIStorage, VRFConsumerBase {
      pathSvg = "<path d='";
      for (uint i = 0; i < numberOfPathCommands; i++) {
        uint256 newRNG = uint256(keccak256(abi.encode(_randomNumber, size + i)));
-       string memory pathCommand = generatePathCommand(newRNG);
+       string memory pathCommand = generatePathCommand(newRNG, i == 0 ? 'M' : 'L');
        pathSvg = string(abi.encodePacked(pathSvg, pathCommand));
      }
      string memory color = colors[_randomNumber % colors.length];
-     pathSvg = string(abi.encodePacked(pathSvg, "' fill='transparent' stroke='", color, "'>"));
+     pathSvg = string(abi.encodePacked(pathSvg, "' fill='transparent' stroke='", color, "'/>"));
   }
 
-  function generatePathCommand(uint256 _randomNumber) public view returns (string memory pathCommand) {
-    pathCommand = pathCommands[_randomNumber % pathCommands.length];
+  function generatePathCommand(uint256 _randomNumber, string memory command) public view returns (string memory pathCommand) {
+    pathCommand = command;
     uint256 parameterOne = uint256(keccak256(abi.encode(_randomNumber, size * 2))) % size;
-    uint256 parameterTwo = uint256(keccak256(abi.encode(_randomNumber, size * 2))) % size;
-    pathCommand = string(abi.encodePacked(pathCommand, " ", uint2str(parameterOne), " ", uint2str(parameterTwo)));
+    uint256 parameterTwo = uint256(keccak256(abi.encode(_randomNumber, size * 2 + 1))) % size;
+    pathCommand = string(abi.encodePacked(pathCommand, uint2str(parameterOne), " ", uint2str(parameterTwo), " "));
   }
 
   function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
